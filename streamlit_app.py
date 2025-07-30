@@ -99,8 +99,8 @@ class MediaPipeAnalyzer:
         except:
             return None
     
-    def get_joint_angles(self, landmarks):
-        """Calculate key joint angles"""
+    def get_knee_angles(self, landmarks):
+        """Calculate knee angles only"""
         angles = {}
         
         try:
@@ -119,22 +119,6 @@ class MediaPipeAnalyzer:
             
             if all(p.visibility > 0.3 for p in [right_hip, right_knee, right_ankle]):
                 angles['right_knee'] = self.calculate_angle(right_hip, right_knee, right_ankle)
-            
-            # Left elbow angle
-            left_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value]
-            left_elbow = landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value]
-            left_wrist = landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value]
-            
-            if all(p.visibility > 0.3 for p in [left_shoulder, left_elbow, left_wrist]):
-                angles['left_elbow'] = self.calculate_angle(left_shoulder, left_elbow, left_wrist)
-            
-            # Right elbow angle
-            right_shoulder = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value]
-            right_elbow = landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value]
-            right_wrist = landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value]
-            
-            if all(p.visibility > 0.3 for p in [right_shoulder, right_elbow, right_wrist]):
-                angles['right_elbow'] = self.calculate_angle(right_shoulder, right_elbow, right_wrist)
                 
         except Exception as e:
             pass
@@ -164,8 +148,8 @@ class MediaPipeAnalyzer:
                 mp_drawing.draw_landmarks(
                     frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
                 
-                # Calculate angles
-                angles = self.get_joint_angles(results.pose_landmarks.landmark)
+                # Calculate knee angles
+                angles = self.get_knee_angles(results.pose_landmarks.landmark)
                 
                 return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), angles, True, None
             else:
@@ -192,13 +176,13 @@ def get_frame(video_path, frame_number):
 
 def main():
     st.set_page_config(
-        page_title="MediaPipe Joint Analysis",
-        page_icon="🦴",
+        page_title="MediaPipe Knee Analysis",
+        page_icon="🦵",
         layout="wide"
     )
     
-    st.title("🦴 MediaPipe Joint Angle Analysis")
-    st.markdown("*Advanced pose detection with angle measurements*")
+    st.title("🦵 MediaPipe Knee Angle Analysis")
+    st.markdown("*Advanced pose detection with knee angle measurements*")
     
     # Show MediaPipe status
     if MEDIAPIPE_AVAILABLE:
@@ -215,7 +199,7 @@ def main():
     uploaded_file = st.file_uploader(
         "Upload Video File",
         type=['mp4', 'avi', 'mov'],
-        help="Upload video for joint angle analysis"
+        help="Upload video for knee angle analysis"
     )
     
     if uploaded_file is not None:
@@ -282,25 +266,26 @@ def main():
                     )
                 
                 with col2:
-                    st.subheader("📐 Joint Angles")
+                    st.subheader("🦵 Knee Angles")
                     
                     if error:
                         st.error(f"❌ {error}")
                     elif pose_detected:
                         st.success("✅ Pose detected")
                         
-                        # Display angles
+                        # Display knee angles only
                         if 'left_knee' in angles:
                             st.metric("Left Knee", f"{angles['left_knee']:.1f}°")
+                        else:
+                            st.warning("Left knee: Not detected")
+                            
                         if 'right_knee' in angles:
                             st.metric("Right Knee", f"{angles['right_knee']:.1f}°")
-                        if 'left_elbow' in angles:
-                            st.metric("Left Elbow", f"{angles['left_elbow']:.1f}°")
-                        if 'right_elbow' in angles:
-                            st.metric("Right Elbow", f"{angles['right_elbow']:.1f}°")
+                        else:
+                            st.warning("Right knee: Not detected")
                         
                         if not angles:
-                            st.warning("No joint angles calculated")
+                            st.warning("No knee angles calculated")
                     else:
                         st.warning("⚠️ No pose detected in this frame")
             
